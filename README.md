@@ -12,5 +12,5 @@ This project provides a [Julia](https://julialang.org) script. Make sure to use 
 
 ```bash
 julia --project=. -e "using Pkg; Pkg.instantiate()"
-julia --project=. scripts/scripts.jl
+julia --project=. scripts/script.jl
 ```
