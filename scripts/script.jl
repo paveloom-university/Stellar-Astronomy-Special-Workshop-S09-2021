@@ -19,7 +19,7 @@ using Zygote # Derivatives
 gr()
 
 # Change the default font for plots
-default(fontfamily = "Computer Modern", dpi=300, legend=:outerright)
+default(fontfamily="Computer Modern", dpi=300, legend=:outerright)
 
 println(" "^4, "> Loading the data...")
 
@@ -59,11 +59,11 @@ res = Optim.optimize(
     θ₀,
     Fminbox(LBFGS()),
     Optim.Options(
-        show_trace = false,
-        extended_trace = true,
-        store_trace = true,
+        show_trace=false,
+        extended_trace=true,
+        store_trace=true,
     );
-    inplace = false,
+    inplace=false,
 )
 
 # Unpack the results
@@ -99,26 +99,34 @@ println(
 
 println(" "^4, "> Plotting the histogram...")
 
-# Calculate the model distribution
-φ =  @. 1 / sqrt(2 * π) * (
-    c / σ₁ * exp(-(f - μ₁)^2 / (2 * σ₁^2)) +
-    (1 - c) / σ₂ * exp(-(f - μ₂)^2 / (2 * σ₂^2))
-)
-
 # Define the histogram's step
 Δf = 0.1
+
+# Calculate the left border of the histogram
+lb = Δf * floor(minimum(f) / Δf)
+
+# Prepare a range for the model distribution
+r = range(lb, 0; length=1000)
+
+# Calculate the model distribution
+φ =  @. 1 / sqrt(2 * π) * (
+    c / σ₁ * exp(-(r - μ₁)^2 / (2 * σ₁^2)) +
+    (1 - c) / σ₂ * exp(-(r - μ₂)^2 / (2 * σ₂^2))
+)
 
 # Create a histogram of observed data
 p = histogram(
     f;
     label="Наблюдаемые данные",
-    xlabel = "Показатель металличности",
-    ylabel = "Число скоплений",
-    bins=range(extrema(f)...; step=Δf)
+    xlabel="Показатель металличности",
+    ylabel="Число скоплений",
+    bins=range(lb, 0; step=Δf),
+    color="#80cdfd",
 );
+plot!(p, minorticks=5, yticks=range(0, ceil(Int, ylims(p)[2]); step=5))
 
 # Add the scaled model data to the plot
-scatter!(p, f, N * Δf * φ; label="Модельная функция");
+plot!(p, r, N * Δf * φ; label="Модельная функция", lw=1.5);
 
 # Save the figure
 savefig(p, "$(PLOTS_PATH)/histogram.pdf")
@@ -136,13 +144,13 @@ function nlml_frozen(
     θᵤ::Vector{Float64}
 )::Float64
     # Exclude the frozen parameter from the active ones
-    θ₀ = [θ₀[1:idx-1]; θ₀[idx+1:end]]
-    θₗ = [θₗ[1:idx-1]; θₗ[idx+1:end]]
-    θᵤ = [θᵤ[1:idx-1]; θᵤ[idx+1:end]]
+    θ₀ = [θ₀[1:idx - 1]; θ₀[idx + 1:end]]
+    θₗ = [θₗ[1:idx - 1]; θₗ[idx + 1:end]]
+    θᵤ = [θᵤ[1:idx - 1]; θᵤ[idx + 1:end]]
 
     # Recreate the function, handling a frozen parameter
     function nlml_frozen_inner(θ::Vector{Float64})
-        μ₁, σ₁, μ₂, σ₂, c = [θ[1:idx-1]; value; θ[idx:end]]
+        μ₁, σ₁, μ₂, σ₂, c = [θ[1:idx - 1]; value; θ[idx:end]]
         return -sum(
             @. log(
                 c / σ₁ * exp(-(f - μ₁)^2 / (2 * σ₁^2)) +
@@ -160,15 +168,15 @@ function nlml_frozen(
         θ₀,
         Fminbox(LBFGS()),
         Optim.Options(
-            show_trace = false,
-            extended_trace = true,
-            store_trace = true,
+            show_trace=false,
+            extended_trace=true,
+            store_trace=true,
         );
-        inplace = false,
+        inplace=false,
     )
 
     # Unpack the results
-    μ₁, σ₁, μ₂, σ₂, c = [res.minimizer[1:idx-1]; value; res.minimizer[idx:end]]
+    μ₁, σ₁, μ₂, σ₂, c = [res.minimizer[1:idx - 1]; value; res.minimizer[idx:end]]
 
     # Create a directory for results if it doesn't exist
     if !isdir("$(TRACES_PATH)/$(idx)")
